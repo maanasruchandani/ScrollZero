@@ -1,11 +1,5 @@
-import os
 import json
-from google import genai
-from dotenv import load_dotenv
-
-load_dotenv()
-
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+import httpx
 
 async def generate_bot_personality(profile_text: str, bot_name: str, theme: str, phone: str) -> dict:
     prompt = f"""
@@ -24,15 +18,19 @@ You are given a LinkedIn profile of a person. Extract and return a JSON object w
 Profile text:
 {profile_text}
 
-Return ONLY valid JSON. No explanation, no markdown.
+Return ONLY valid JSON. No explanation, no markdown. No code blocks.
 """
-    response = client.models.generate_content(
-        model="gemini-2.0-flash-lite",
-        contents=prompt
-    )
-    text = response.text.strip()
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
-    return json.loads(text.strip())
+    async with httpx.AsyncClient(timeout=120) as client:
+        response = await client.post(
+            "http://localhost:11434/api/generate",
+            json={"model": "llama3.2", "prompt": prompt, "stream": False}
+        )
+        result = response.json()
+        text = result["response"].strip()
+# extract JSON block robustly
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start == -1 or end == 0:
+            raise ValueError("No JSON found in response")
+        json_str = text[start:end]
+        return json.loads(json_str)

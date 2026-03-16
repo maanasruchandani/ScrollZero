@@ -38,8 +38,8 @@ async function handleSubmit() {
       body: formData,
     });
 
-    const data = await res.json();
-    console.log(data);
+    const text = await res.text();
+    console.log("Raw response:", text);
     setLoading(false);
 }
 
