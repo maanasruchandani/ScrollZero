@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ParticleBackground from "@/components/ParticleBackground";
+import { useRouter } from "next/navigation";
+
+
 
 const themes = [
   { id: "minimalistic", label: "Minimalist", icon: "◻", desc: "Clean & simple" },
@@ -13,22 +16,23 @@ const themes = [
 ];
 
 export default function Dashboard() {
+  const router = useRouter();
   const [linkedinUrl, setLinkedinUrl] = useState("");
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [botName, setBotName] = useState("");
   const [theme, setTheme] = useState("");
   const [pdf, setPdf] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [botUrl, setBotUrl] = useState("");
 
-  const progress = [linkedinUrl, phone, botName, theme, pdf].filter(Boolean).length * 20;
+  const progress = [linkedinUrl, email, botName, theme, pdf].filter(Boolean).length * 20;
 
 async function handleSubmit() {
     if (!pdf) return;
     setLoading(true);
 
     const formData = new FormData();
-    formData.append("phone", phone);
+    formData.append("email", email);
     formData.append("bot_name", botName);
     formData.append("theme", theme);
     formData.append("pdf", pdf);
@@ -38,8 +42,12 @@ async function handleSubmit() {
       body: formData,
     });
 
-    const text = await res.text();
-    console.log("Raw response:", text);
+const data = await res.json();
+    console.log("Bot created:", data);
+    if (data.url) {
+      setBotUrl(data.url);
+      router.push(data.url);
+    }
     setLoading(false);
 }
 
@@ -81,12 +89,13 @@ async function handleSubmit() {
               />
             </div>
             <div>
-              <Label className="text-white/40 text-xs">Phone Number</Label>
+              <Label className="text-white/40 text-xs">Email</Label>
               <Input
                 className="mt-1 bg-white/5 border-white/10 text-sm placeholder:text-white/20"
-                placeholder="+91 00000 00000"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
+                placeholder="you@example.com"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
               />
             </div>
             <div>
@@ -151,7 +160,7 @@ async function handleSubmit() {
               <Row label="Theme" value={theme || "—"} />
               <Row label="Profile" value={linkedinUrl ? "Provided" : "—"} />
               <Row label="PDF" value={pdf ? pdf.name : "—"} />
-              <Row label="Phone" value={phone ? "Provided" : "—"} />
+              <Row label="Email" value={email ? "Provided" : "—"} />
             </div>
 
             <Button
